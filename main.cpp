@@ -35,6 +35,22 @@ void move_up(int N) {
   printf("\033[%dA", N);
 }
 
+template <std::size_t NUM_LINES_IN_TEST, std::size_t NUM_WORDS_PER_LINE_IN_TEST, std::size_t N>
+auto update_lines(std::array<std::string, N>& array_of_lines, std::vector<std::string>& words, std::uniform_int_distribution<std::size_t>& distr, std::mt19937& gen) {
+  std::array<std::string, N> result = array_of_lines;
+
+  for (std::size_t i = 0; i < NUM_LINES_IN_TEST - 1; ++i) {
+    result[i] = array_of_lines[i + 1];
+  }
+
+  /// Generate one new line
+  auto new_line = generate_lines<1, NUM_WORDS_PER_LINE_IN_TEST>(words, distr, gen);
+
+  result[N - 1] = new_line[0];
+
+  return result;
+}
+
 template <std::size_t NUM_LINES_IN_TEST, std::size_t NUM_WORDS_PER_LINE_IN_TEST>
 auto generate_lines(std::vector<std::string>& words, std::uniform_int_distribution<std::size_t>& distr, std::mt19937& gen) {
   std::array<std::string, NUM_LINES_IN_TEST> array_of_lines{};
@@ -121,6 +137,11 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines) {
       std::cout << "\n\r" << std::flush;
       n += 1;
       i = 0;
+
+      if (n == 2) {
+        /// Generate new array of lines
+        array_of_lines = update_lines(array_of_lines, words, distr, gen);
+      }
 
       /// Update line string
       if (n == N) {
