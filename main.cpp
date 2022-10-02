@@ -10,7 +10,7 @@
 
 #include <unistd.h>
 #include <termios.h>
-#include <linux/input.h>
+#include <sys/ioctl.h>
 
 char getch() {
   char buf = 0;
@@ -49,7 +49,8 @@ void move_left(int N) {
 }
 
 template <std::size_t NUM_LINES_IN_TEST, std::size_t NUM_WORDS_PER_LINE_IN_TEST>
-auto generate_lines(std::vector<std::string>& words, std::uniform_int_distribution<std::size_t>& distr, std::mt19937& gen) {
+auto generate_lines(std::vector<std::string>& words, std::uniform_int_distribution<std::size_t>& distr, std::mt19937& gen,
+  unsigned short rows, unsigned short cols) {
   std::array<std::string, NUM_LINES_IN_TEST> array_of_lines{};
 
   for (std::size_t i = 0; i < NUM_LINES_IN_TEST; ++i) {
@@ -69,6 +70,14 @@ auto generate_lines(std::vector<std::string>& words, std::uniform_int_distributi
       }
 
       if (i > 0 && i % 10 == 0) {
+
+        /// Check terminal size (cols)
+        /// and trim the line
+        while (line.size() > cols) {
+          auto it = line.rfind(' ');
+          line = line.substr(0, it);
+        }
+
         line += "\n";
       }
     }
@@ -130,6 +139,8 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
   std::size_t n = 0; // current line
   auto line = array_of_lines[n];
 
+  std::size_t num_mistakes{0};
+
   while(true) {
     if (n >= N) {
       std::cout << "\r\n";
@@ -166,6 +177,7 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
     }
     else {
       std::cout << termcolor::red << expected << termcolor::reset << std::flush;
+      num_mistakes += 1;
     }
 
     if (i >= line.size()) {
@@ -190,6 +202,12 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
 
 int main() {
 
+  struct winsize w;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+
+  const auto rows = w.ws_col;
+  const auto cols = w.ws_col;
+
   std::ifstream file("popular.txt");
 
   std::size_t num_lines{0};
@@ -212,7 +230,7 @@ int main() {
   constexpr std::size_t num_words_per_line_in_test = 10;
 
   /// Generate list of lines
-  auto array_of_lines = generate_lines<num_lines_in_test, num_words_per_line_in_test>(words, distr, gen);
+  auto array_of_lines = generate_lines<num_lines_in_test, num_words_per_line_in_test>(words, distr, gen, rows, cols);
 
   /// Start test
   loop_array_of_lines<num_lines_in_test, num_words_per_line_in_test>(array_of_lines, words, distr, gen);
