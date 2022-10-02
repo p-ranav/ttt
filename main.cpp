@@ -35,6 +35,36 @@ void move_up(int N) {
   printf("\033[%dA", N);
 }
 
+template <std::size_t NUM_LINES_IN_TEST, std::size_t NUM_WORDS_PER_LINE_IN_TEST>
+auto generate_lines(std::vector<std::string>& words, std::uniform_int_distribution<std::size_t>& distr, std::mt19937& gen) {
+  std::array<std::string, NUM_LINES_IN_TEST> array_of_lines{};
+
+  for (std::size_t i = 0; i < NUM_LINES_IN_TEST; ++i) {
+    std::string line{""};
+    for (std::size_t j = 0; j < NUM_WORDS_PER_LINE_IN_TEST; ++j) {
+      line += words[distr(gen)];
+
+      if (j + 1 < NUM_WORDS_PER_LINE_IN_TEST) {
+        /// Not the last line
+        line += " ";
+      }
+      else if (j + 1 == NUM_WORDS_PER_LINE_IN_TEST) {
+        /// Last word in line
+        if (i + 1 < NUM_LINES_IN_TEST) {
+          line += " ";
+        }
+      }
+
+      if (i > 0 && i % 10 == 0) {
+        line += "\n";
+      }
+    }
+    array_of_lines[i] = line;
+  }
+
+  return array_of_lines;
+}
+
 template <std::size_t NUM_LINES_IN_TEST, std::size_t NUM_WORDS_PER_LINE_IN_TEST, std::size_t N>
 void loop_array_of_lines(std::array<std::string, N>& array_of_lines) {
   std::chrono::high_resolution_clock::time_point start;
@@ -126,24 +156,9 @@ int main() {
 
   constexpr std::size_t num_lines_in_test = 3;
   constexpr std::size_t num_words_per_line_in_test = 5;
-  std::array<std::string, num_lines_in_test> array_of_lines{};
 
-  for (std::size_t i = 0; i < num_lines_in_test; ++i) {
-    std::string line{""};
-    for (std::size_t j = 0; j < num_words_per_line_in_test; ++j) {
-      line += words[distr(gen)];
-
-      if (i + 1 < num_words_per_line_in_test) {
-        /// Not the last line
-        line += " ";
-      }
-
-      if (i > 0 && i % 10 == 0) {
-        line += "\n";
-      }
-    }
-    array_of_lines[i] = line;
-  }
+  /// Generate list of lines
+  auto array_of_lines = generate_lines<num_lines_in_test, num_words_per_line_in_test>(words, distr, gen);
 
   /// Start test
   loop_array_of_lines<num_lines_in_test, num_words_per_line_in_test>(array_of_lines);
