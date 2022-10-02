@@ -71,9 +71,11 @@ auto generate_lines(std::vector<std::string>& words, std::uniform_int_distributi
 
       if (i > 0 && i % 10 == 0) {
 
+        std::cout << line.size() << " " << cols << "\n";
+
         /// Check terminal size (cols)
         /// and trim the line
-        while (line.size() > cols) {
+        while (line.size() + 1 > cols) {
           auto it = line.rfind(' ');
           line = line.substr(0, it);
         }
