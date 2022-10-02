@@ -1,6 +1,7 @@
 #include <array>
 #include <chrono>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <random>
 #include <string>
@@ -100,6 +101,23 @@ auto update_lines(std::array<std::string, N>& array_of_lines, std::vector<std::s
   return result;
 }
 
+std::size_t count_words(const std::string& str) {
+  std::size_t result{0};
+
+  char prev = ' ';
+
+  auto size = str.size();
+
+  for(std::size_t i = 0; i < size; ++i) {
+    if(i + 1 < size && str[i] != ' ' && prev == ' ') {
+      result++;
+    }
+    prev = str[i];
+  }
+
+  return result;
+}
+
 template <std::size_t NUM_LINES_IN_TEST, std::size_t NUM_WORDS_PER_LINE_IN_TEST, std::size_t N>
 void loop_array_of_lines(std::array<std::string, N>& array_of_lines, 
                          std::vector<std::string>& words, 
@@ -110,19 +128,7 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
   /// Print lines first
   /// Assume cursor is already in the right place
   for (std::size_t i = 0; i < N; ++i) {
-    std::cout << termcolor::grey << termcolor::bold << array_of_lines[i] << termcolor::reset;
-
-    // if (i + 1 < N) {
-    //   /// Not last line
-    //   /// Print look ahead words as assistance
-    //   for (std::size_t k = 0; k < 2; ++k) {
-    //     if (k < NUM_WORDS_PER_LINE_IN_TEST) {
-    //       std::cout << termcolor::grey << termcolor::bold << array_of_lines[i + 1].substr(0, 10) << termcolor::reset;
-    //     }
-    //   }
-    // }
-    
-    std::cout << std::endl;
+    std::cout << termcolor::grey << termcolor::bold << array_of_lines[i] << termcolor::reset << std::endl;
   }
 
   /// Move up N lines to reset cursor
@@ -136,7 +142,10 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
   std::size_t n = 0; // current line
   auto line = array_of_lines[n];
 
-  std::size_t num_mistakes{0};
+  std::size_t total_num_mistakes{0};
+  std::size_t current_word{0};
+  std::size_t current_word_mistakes{0};
+  std::size_t total_wrong_words{0};
 
   while(true) {
     if (n >= N) {
@@ -145,10 +154,24 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
       auto end = std::chrono::high_resolution_clock::now();
       auto seconds = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
       auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-      auto num_words = NUM_LINES_IN_TEST * NUM_WORDS_PER_LINE_IN_TEST;
-      std::cout << "Words : " << num_words << "\n";
-      std::cout << "Time  : " << seconds << "s\n";
-      std::cout << "WPM   : " << (float(num_words) / milliseconds) * 60 * 1000.0 << "\n";
+
+      std::size_t num_chars{0};
+      std::size_t num_words{0};
+      for (std::size_t i = 0; i < N; ++i) {
+        num_words += count_words(array_of_lines[i]);
+        num_chars += array_of_lines[i].size();
+      }
+
+      auto accuracy = 100.0 - (float(total_num_mistakes) / num_chars * 100.0);
+      auto wpm = (float(num_words) / milliseconds) * 60 * 1000.0;
+
+      std::cout << int(wpm) 
+                << " wpm with "
+                << std::setprecision(2) 
+                << std::fixed
+                << accuracy << "%"
+                << " accuracy" 
+                << std::endl;
       break;
     }
     char current = getch();
@@ -174,7 +197,7 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
     }
     else {
       std::cout << termcolor::red << expected << termcolor::reset << std::flush;
-      num_mistakes += 1;
+      total_num_mistakes += 1;
     }
 
     if (i >= line.size()) {
