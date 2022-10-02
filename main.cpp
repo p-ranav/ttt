@@ -1,3 +1,4 @@
+#include <array>
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -34,6 +35,69 @@ void move_up(int N) {
   printf("\033[%dA", N);
 }
 
+template <std::size_t NUM_LINES_IN_TEST, std::size_t NUM_WORDS_PER_LINE_IN_TEST, std::size_t N>
+void loop_array_of_lines(std::array<std::string, N>& array_of_lines) {
+  std::chrono::high_resolution_clock::time_point start;
+
+  /// Print lines first
+  /// Assume cursor is already in the right place
+  for (std::size_t i = 0; i < N; ++i) {
+    std::cout << termcolor::white << termcolor::bold << array_of_lines[i] << termcolor::reset << std::endl;
+  }
+
+  /// Move up N lines to reset cursor
+  move_up(N);
+
+  /// Go to start of first line
+  std::cout << "\r" << std::flush;
+
+  /// Run test loop
+  std::size_t i = 0;
+  std::size_t n = 0; // current line
+  auto line = array_of_lines[n];
+
+  while(true) {
+    if (n >= N) {
+      std::cout << "\r\n";
+      // Report stats here
+      auto end = std::chrono::high_resolution_clock::now();
+      auto seconds = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
+      auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+      auto num_words = NUM_LINES_IN_TEST * NUM_WORDS_PER_LINE_IN_TEST;
+      std::cout << "Words : " << num_words << "\n";
+      std::cout << "Time  : " << seconds << "s\n";
+      std::cout << "WPM   : " << (float(num_words) / milliseconds) * 60 * 1000.0 << "\n";
+      break;
+    }
+    if ((i >= line.size() - 1) || line[i] == '\n') {
+      std::cout << "\n\r" << std::flush;
+      i = 0;
+      /// Go to next line
+      line = array_of_lines[++n];
+      continue;
+    }
+    char current = getch();
+    if (current == ' ' && i == 0) {
+      /// Forgive additional spaces at the start of line
+      continue;
+    }
+    else {
+      if (n == 0 && i == 0) {
+        /// First characted typed by user
+        /// Start time measurement here
+        start = std::chrono::high_resolution_clock::now();
+      }
+      char expected = line[i++];
+      if (expected == current) {
+        std::cout << termcolor::yellow << termcolor::bold << current << termcolor::reset << std::flush;
+      }
+      else {
+        std::cout << termcolor::red << expected << termcolor::reset << std::flush;
+      }
+    }
+  }
+}
+
 int main() {
 
   std::ifstream file("popular.txt");
@@ -54,64 +118,21 @@ int main() {
   std::mt19937 gen(rd());
   std::uniform_int_distribution<std::size_t> distr(0, num_lines);
 
-  constexpr std::size_t num_words = 20;
+  constexpr std::size_t num_lines_in_test = 3;
+  constexpr std::size_t num_words_per_line_in_test = 5;
+  std::array<std::string, num_lines_in_test> array_of_lines{};
 
-  std::size_t num_line_breaks{0};
-  std::string line{""};
-
-  /// Construct words for typing
-  for (std::size_t i = 0; i < num_words; ++i) {
-    line += words[distr(gen)] + " ";
-    if (i > 0 && i % 10 == 0) {
-      line += "\n";
-      num_line_breaks += 1;
+  for (std::size_t i = 0; i < num_lines_in_test; ++i) {
+    std::string line{""};
+    for (std::size_t j = 0; j < num_words_per_line_in_test; ++j) {
+      line += words[distr(gen)] + " ";
+      if (i > 0 && i % 10 == 0) {
+        line += "\n";
+      }
     }
+    array_of_lines[i] = line;
   }
 
-  /// Add final newline if needed
-  if (line[line.size() - 1] != '\n') {
-    line += "\n";
-    num_line_breaks += 1;
-  }
-
-  // Reset cursor to the start
-  std::cout << termcolor::white << termcolor::bold << line << termcolor::reset << std::flush;
-  move_up(num_line_breaks);
-  std::cout << "\r" << std::flush;
-
-  /// Start measurement
-  auto start = std::chrono::high_resolution_clock::now();
-
-  /// Run test loop
-  std::size_t i = 0;
-  while(true) {
-    if (i >= line.size() - 2) {
-      std::cout << "\r\n";
-      // Report stats here
-      auto end = std::chrono::high_resolution_clock::now();
-      auto seconds = std::chrono::duration_cast<std::chrono::seconds>(end - start).count();
-      auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-      std::cout << "Words : " << num_words << "\n";
-      std::cout << "Time  : " << seconds << "s\n";
-      std::cout << "WPM   : " << (float(num_words) / milliseconds) * 60 * 1000.0 << "\n";
-      break;
-    }
-    if (line[i] == ' ') {
-      std::cout << ' ' << std::flush;
-      i += 1;
-    }
-    if (line[i] == '\n') {
-      std::cout << "\n\r" << std::flush;
-      i += 1;
-    }
-    char current = getch();
-    char expected = line[i++];
-    if (expected == current) {
-      std::cout << termcolor::yellow << termcolor::bold << current << termcolor::reset << std::flush;
-    }
-    else {
-      std::cout << termcolor::red << expected << termcolor::reset << std::flush;
-    }
-  }
-  
+  /// Start test
+  loop_array_of_lines<num_lines_in_test, num_words_per_line_in_test>(array_of_lines);
 }
