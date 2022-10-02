@@ -35,22 +35,6 @@ void move_up(int N) {
   printf("\033[%dA", N);
 }
 
-template <std::size_t NUM_LINES_IN_TEST, std::size_t NUM_WORDS_PER_LINE_IN_TEST, std::size_t N>
-auto update_lines(std::array<std::string, N>& array_of_lines, std::vector<std::string>& words, std::uniform_int_distribution<std::size_t>& distr, std::mt19937& gen) {
-  std::array<std::string, N> result = array_of_lines;
-
-  for (std::size_t i = 0; i < NUM_LINES_IN_TEST - 1; ++i) {
-    result[i] = array_of_lines[i + 1];
-  }
-
-  /// Generate one new line
-  auto new_line = generate_lines<1, NUM_WORDS_PER_LINE_IN_TEST>(words, distr, gen);
-
-  result[N - 1] = new_line[0];
-
-  return result;
-}
-
 template <std::size_t NUM_LINES_IN_TEST, std::size_t NUM_WORDS_PER_LINE_IN_TEST>
 auto generate_lines(std::vector<std::string>& words, std::uniform_int_distribution<std::size_t>& distr, std::mt19937& gen) {
   std::array<std::string, NUM_LINES_IN_TEST> array_of_lines{};
@@ -82,7 +66,26 @@ auto generate_lines(std::vector<std::string>& words, std::uniform_int_distributi
 }
 
 template <std::size_t NUM_LINES_IN_TEST, std::size_t NUM_WORDS_PER_LINE_IN_TEST, std::size_t N>
-void loop_array_of_lines(std::array<std::string, N>& array_of_lines) {
+auto update_lines(std::array<std::string, N>& array_of_lines, std::vector<std::string>& words, std::uniform_int_distribution<std::size_t>& distr, std::mt19937& gen) {
+  std::array<std::string, N> result{};
+
+  for (std::size_t i = 0; i < NUM_LINES_IN_TEST - 1; ++i) {
+    result[i] = array_of_lines[i + 1];
+  }
+
+  /// Generate one new line
+  auto new_line = generate_lines<1, NUM_WORDS_PER_LINE_IN_TEST>(words, distr, gen);
+
+  result[N - 1] = new_line[0];
+
+  return result;
+}
+
+template <std::size_t NUM_LINES_IN_TEST, std::size_t NUM_WORDS_PER_LINE_IN_TEST, std::size_t N>
+void loop_array_of_lines(std::array<std::string, N>& array_of_lines, 
+                         std::vector<std::string>& words, 
+                         std::uniform_int_distribution<std::size_t>& distr, 
+                         std::mt19937& gen) {
   std::chrono::high_resolution_clock::time_point start;
 
   /// Print lines first
@@ -116,6 +119,15 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines) {
       break;
     }
     char current = getch();
+    if (i > 0 && line[i - 1] == ' ') {
+      /// Previous character was a space
+      if (current == ' ') {
+        /// User types additional spaces
+
+        /// Ignore it
+        continue;
+      }
+    }
 
     if (n == 0 && i == 0) {
       /// First characted typed by user
@@ -138,10 +150,29 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines) {
       n += 1;
       i = 0;
 
-      if (n == 2) {
-        /// Generate new array of lines
-        array_of_lines = update_lines(array_of_lines, words, distr, gen);
-      }
+      // constexpr std::size_t LINE_NUM_WHERETO_GENERATE_NEW_ARRAY = 2;
+
+      // if (n == LINE_NUM_WHERETO_GENERATE_NEW_ARRAY) {
+      //   /// Generate new array of lines
+      //   array_of_lines = update_lines<NUM_LINES_IN_TEST, NUM_WORDS_PER_LINE_IN_TEST>(array_of_lines, words, distr, gen);
+
+      //   move_up(LINE_NUM_WHERETO_GENERATE_NEW_ARRAY);
+
+      //   /// Go to start of first line
+      //   std::cout << "\r" << std::flush;
+
+      //   /// Print lines first
+      //   /// Assume cursor is already in the right place
+      //   for (std::size_t i = 0; i < N; ++i) {
+      //     std::cout << termcolor::white << termcolor::bold << array_of_lines[i] << termcolor::reset << std::endl;
+      //   }
+
+      //   move_up(N);
+
+      //   /// Go to start of first line
+      //   std::cout << "\r" << std::flush;
+
+      // }
 
       /// Update line string
       if (n == N) {
@@ -175,12 +206,12 @@ int main() {
   std::mt19937 gen(rd());
   std::uniform_int_distribution<std::size_t> distr(0, num_lines);
 
-  constexpr std::size_t num_lines_in_test = 3;
-  constexpr std::size_t num_words_per_line_in_test = 5;
+  constexpr std::size_t num_lines_in_test = 5;
+  constexpr std::size_t num_words_per_line_in_test = 10;
 
   /// Generate list of lines
   auto array_of_lines = generate_lines<num_lines_in_test, num_words_per_line_in_test>(words, distr, gen);
 
   /// Start test
-  loop_array_of_lines<num_lines_in_test, num_words_per_line_in_test>(array_of_lines);
+  loop_array_of_lines<num_lines_in_test, num_words_per_line_in_test>(array_of_lines, words, distr, gen);
 }
