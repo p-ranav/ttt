@@ -56,7 +56,15 @@ auto generate_lines(std::vector<std::string>& words, std::uniform_int_distributi
   for (std::size_t i = 0; i < NUM_LINES_IN_TEST; ++i) {
     std::string line{""};
     for (std::size_t j = 0; j < NUM_WORDS_PER_LINE_IN_TEST; ++j) {
-      line += words[distr(gen)];
+      auto word = words[distr(gen)];
+
+      /// Check terminal size (cols)
+      /// and break early if overflowing
+      if (line.size() + word.size() >= cols) {
+        break;
+      }
+
+      line += word;
 
       if (j + 1 < NUM_WORDS_PER_LINE_IN_TEST) {
         /// Not the last line
@@ -68,21 +76,8 @@ auto generate_lines(std::vector<std::string>& words, std::uniform_int_distributi
           line += " ";
         }
       }
-
-      if (i > 0 && i % 10 == 0) {
-
-        std::cout << line.size() << " " << cols << "\n";
-
-        /// Check terminal size (cols)
-        /// and trim the line
-        while (line.size() + 1 > cols) {
-          auto it = line.rfind(' ');
-          line = line.substr(0, it);
-        }
-
-        line += "\n";
-      }
     }
+
     array_of_lines[i] = line;
   }
 
@@ -115,17 +110,17 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
   /// Print lines first
   /// Assume cursor is already in the right place
   for (std::size_t i = 0; i < N; ++i) {
-    std::cout << termcolor::white << termcolor::bold << array_of_lines[i] << termcolor::reset;
+    std::cout << termcolor::grey << termcolor::bold << array_of_lines[i] << termcolor::reset;
 
-    if (i + 1 < N) {
-      /// Not last line
-      /// Print look ahead words as assistance
-      for (std::size_t k = 0; k < 2; ++k) {
-        if (k < NUM_WORDS_PER_LINE_IN_TEST) {
-          std::cout << termcolor::grey << termcolor::bold << array_of_lines[i + 1].substr(0, 10) << termcolor::reset;
-        }
-      }
-    } 
+    // if (i + 1 < N) {
+    //   /// Not last line
+    //   /// Print look ahead words as assistance
+    //   for (std::size_t k = 0; k < 2; ++k) {
+    //     if (k < NUM_WORDS_PER_LINE_IN_TEST) {
+    //       std::cout << termcolor::grey << termcolor::bold << array_of_lines[i + 1].substr(0, 10) << termcolor::reset;
+    //     }
+    //   }
+    // }
     
     std::cout << std::endl;
   }
