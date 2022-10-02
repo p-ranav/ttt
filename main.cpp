@@ -79,21 +79,20 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines) {
     char current = getch();
     if (current == ' ' && i == 0) {
       /// Forgive additional spaces at the start of line
-      continue;
+      current = getch();
+    }
+
+    if (n == 0 && i == 0) {
+      /// First characted typed by user
+      /// Start time measurement here
+      start = std::chrono::high_resolution_clock::now();
+    }
+    char expected = line[i++];
+    if (expected == current) {
+      std::cout << termcolor::yellow << termcolor::bold << current << termcolor::reset << std::flush;
     }
     else {
-      if (n == 0 && i == 0) {
-        /// First characted typed by user
-        /// Start time measurement here
-        start = std::chrono::high_resolution_clock::now();
-      }
-      char expected = line[i++];
-      if (expected == current) {
-        std::cout << termcolor::yellow << termcolor::bold << current << termcolor::reset << std::flush;
-      }
-      else {
-        std::cout << termcolor::red << expected << termcolor::reset << std::flush;
-      }
+      std::cout << termcolor::red << expected << termcolor::reset << std::flush;
     }
   }
 }
