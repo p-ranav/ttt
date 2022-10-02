@@ -10,6 +10,7 @@
 
 #include <unistd.h>
 #include <termios.h>
+#include <linux/input.h>
 
 char getch() {
   char buf = 0;
@@ -105,6 +106,19 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
   std::size_t n = 0; // current line
   auto line = array_of_lines[n];
 
+  int key  = KEY_LEFTCTRL;
+
+  FILE *kbd = fopen("/dev/input/by-path/platform-i8042-serio-0-event-kbd", "r");
+  char key_map[KEY_MAX/8 + 1];    //  Create a byte array the size of the number of keys
+  ioctl(fileno(kbd), EVIOCGKEY(sizeof(key_map)), key_map);    //  Fill the keymap with the current keyboard state
+
+  int keyb = key_map[key/8];  //  The key we want (and the seven others arround it)
+  int mask = 1 << (key % 8);  //  Put a one in the same column as out key state will be in;
+
+  auto ctrl = [&]() {
+    return !(keyb & mask);  //  Returns true if pressed otherwise false
+  };
+
   while(true) {
     if (n >= N) {
       std::cout << "\r\n";
@@ -119,6 +133,18 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
       break;
     }
     char current = getch();
+
+    if (current == 127 || current == 8) {
+      /// Delete or Backspace
+      if (ctrl()) {
+        /// CTRL pressed
+        /// Go back one word
+      }
+      else {
+        /// Go back one char
+      }
+    }
+
     if (i > 0 && line[i - 1] == ' ') {
       /// Previous character was a space
       if (current == ' ') {
@@ -149,30 +175,6 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
       std::cout << "\n\r" << std::flush;
       n += 1;
       i = 0;
-
-      // constexpr std::size_t LINE_NUM_WHERETO_GENERATE_NEW_ARRAY = 2;
-
-      // if (n == LINE_NUM_WHERETO_GENERATE_NEW_ARRAY) {
-      //   /// Generate new array of lines
-      //   array_of_lines = update_lines<NUM_LINES_IN_TEST, NUM_WORDS_PER_LINE_IN_TEST>(array_of_lines, words, distr, gen);
-
-      //   move_up(LINE_NUM_WHERETO_GENERATE_NEW_ARRAY);
-
-      //   /// Go to start of first line
-      //   std::cout << "\r" << std::flush;
-
-      //   /// Print lines first
-      //   /// Assume cursor is already in the right place
-      //   for (std::size_t i = 0; i < N; ++i) {
-      //     std::cout << termcolor::white << termcolor::bold << array_of_lines[i] << termcolor::reset << std::endl;
-      //   }
-
-      //   move_up(N);
-
-      //   /// Go to start of first line
-      //   std::cout << "\r" << std::flush;
-
-      // }
 
       /// Update line string
       if (n == N) {
