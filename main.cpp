@@ -69,18 +69,7 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines) {
       std::cout << "WPM   : " << (float(num_words) / milliseconds) * 60 * 1000.0 << "\n";
       break;
     }
-    if ((i >= line.size() - 1) || line[i] == '\n') {
-      std::cout << "\n\r" << std::flush;
-      i = 0;
-      /// Go to next line
-      line = array_of_lines[++n];
-      continue;
-    }
     char current = getch();
-    if (current == ' ' && i == 0) {
-      /// Forgive additional spaces at the start of line
-      current = getch();
-    }
 
     if (n == 0 && i == 0) {
       /// First characted typed by user
@@ -94,6 +83,24 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines) {
     else {
       std::cout << termcolor::red << expected << termcolor::reset << std::flush;
     }
+
+    if (i >= line.size()) {
+      /// Last character in line has been printed
+
+      /// Go to start of next line
+      std::cout << "\n\r" << std::flush;
+      n += 1;
+      i = 0;
+
+      /// Update line string
+      if (n == N) {
+        /// No more lines
+      }
+      else {
+        line = array_of_lines[n];
+      }
+    }
+
   }
 }
 
@@ -124,7 +131,13 @@ int main() {
   for (std::size_t i = 0; i < num_lines_in_test; ++i) {
     std::string line{""};
     for (std::size_t j = 0; j < num_words_per_line_in_test; ++j) {
-      line += words[distr(gen)] + " ";
+      line += words[distr(gen)];
+
+      if (i + 1 < num_words_per_line_in_test) {
+        /// Not the last line
+        line += " ";
+      }
+
       if (i > 0 && i % 10 == 0) {
         line += "\n";
       }
