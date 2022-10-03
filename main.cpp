@@ -1,9 +1,11 @@
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <random>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -47,6 +49,10 @@ void move_right(int N) {
 
 void move_left(int N) {
   printf("\033[%dD", N);
+}
+
+void clear_line() {
+  printf("\33[2K\r");
 }
 
 template <std::size_t NUM_LINES_IN_TEST, std::size_t NUM_WORDS_PER_LINE_IN_TEST>
@@ -143,9 +149,9 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
   auto line = array_of_lines[n];
 
   std::size_t total_num_mistakes{0};
-  std::size_t current_word{0};
-  std::size_t current_word_mistakes{0};
-  std::size_t total_wrong_words{0};
+
+  /// each index in the set in each line has a mistake
+  std::array<std::set<std::size_t>, N> error_indices{}; 
 
   while(true) {
     if (n >= N) {
@@ -176,6 +182,50 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
     }
     char current = getch();
 
+    if (current == 127) {
+      /// Go to start of line
+      std::cout << "\r"; 
+
+      auto current_pos = i - 1;
+
+      auto it = error_indices[n].find(current_pos);
+      if (it != error_indices[n].end()) {
+        error_indices[n].erase(it);
+      }
+
+      for (std::size_t x = 0; x < line.size(); ++x) {
+
+        auto error_char = error_indices[n].find(x) != error_indices[n].end();
+
+        if (error_char) {
+          std::cout << termcolor::red << line[x] << termcolor::reset << std::flush;
+        }
+        else {
+          if (x > current_pos) {
+            std::cout << termcolor::grey << line[x] << termcolor::reset << std::flush;
+          }
+          else {
+            std::cout << termcolor::yellow << line[x] << termcolor::reset << std::flush;
+          }
+        }
+      }
+
+      move_left(line.size() - current_pos + 1);
+
+      if (i > 1) {
+        i -= 1;
+      } else {
+        i = 0;
+      }
+
+      if (error_indices[n].find(i - 1) != error_indices[n].end()) {
+        std::cout << termcolor::red << termcolor::bold << line[i - 1] << termcolor::reset << std::flush;
+      } else {
+        std::cout << termcolor::yellow << termcolor::bold << line[i - 1] << termcolor::reset << std::flush;
+      }
+      continue;
+    }
+
     if (i > 0 && line[i - 1] == ' ') {
       /// Previous character was a space
       if (current == ' ') {
@@ -198,6 +248,7 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
     else {
       std::cout << termcolor::red << expected << termcolor::reset << std::flush;
       total_num_mistakes += 1;
+      error_indices[n].insert(i - 1);
     }
 
     if (i >= line.size()) {
