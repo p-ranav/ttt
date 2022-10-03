@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <linux/input.h>
 
 char getch() {
   char buf = 0;
@@ -180,6 +181,7 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
                 << std::endl;
       break;
     }
+
     char current = getch();
 
     if (current == 127) {
@@ -198,14 +200,14 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
         auto error_char = error_indices[n].find(x) != error_indices[n].end();
 
         if (error_char) {
-          std::cout << termcolor::red << line[x] << termcolor::reset << std::flush;
+          std::cout << termcolor::red << termcolor::bold << line[x] << termcolor::reset << std::flush;
         }
         else {
           if (x > current_pos) {
-            std::cout << termcolor::grey << line[x] << termcolor::reset << std::flush;
+            std::cout << termcolor::grey << termcolor::bold << line[x] << termcolor::reset << std::flush;
           }
           else {
-            std::cout << termcolor::yellow << line[x] << termcolor::reset << std::flush;
+            std::cout << termcolor::yellow << termcolor::bold << line[x] << termcolor::reset << std::flush;
           }
         }
       }
@@ -267,7 +269,6 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
         line = array_of_lines[n];
       }
     }
-
   }
 }
 
@@ -297,8 +298,8 @@ int main() {
   std::mt19937 gen(rd());
   std::uniform_int_distribution<std::size_t> distr(0, num_lines);
 
-  constexpr std::size_t num_lines_in_test = 10;
-  constexpr std::size_t num_words_per_line_in_test = 10;
+  constexpr std::size_t num_lines_in_test = 3;
+  constexpr std::size_t num_words_per_line_in_test = 5;
 
   /// Generate list of lines
   auto array_of_lines = generate_lines<num_lines_in_test, num_words_per_line_in_test>(words, distr, gen, rows, cols);
