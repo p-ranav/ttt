@@ -14,7 +14,6 @@
 #include <unistd.h>
 #include <termios.h>
 #include <sys/ioctl.h>
-#include <linux/input.h>
 
 char getch() {
   char buf = 0;
