@@ -188,7 +188,12 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
       /// Go to start of line
       std::cout << "\r"; 
 
-      auto current_pos = i - 1;
+      std::size_t current_pos;
+      if (i > 1) {
+        current_pos = i - 1;
+      } else {
+        current_pos = 0;
+      }
 
       auto it = error_indices[n].find(current_pos);
       if (it != error_indices[n].end()) {
@@ -207,7 +212,11 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
             std::cout << termcolor::grey << termcolor::bold << line[x] << termcolor::reset << std::flush;
           }
           else {
-            std::cout << termcolor::yellow << termcolor::bold << line[x] << termcolor::reset << std::flush;
+            if (current_pos > 0) {
+              std::cout << termcolor::yellow << termcolor::bold << line[x] << termcolor::reset << std::flush;
+            } else {
+              std::cout << termcolor::grey << termcolor::bold << line[x] << termcolor::reset << std::flush;
+            }
           }
         }
       }
@@ -248,7 +257,7 @@ void loop_array_of_lines(std::array<std::string, N>& array_of_lines,
       std::cout << termcolor::yellow << termcolor::bold << current << termcolor::reset << std::flush;
     }
     else {
-      std::cout << termcolor::red << expected << termcolor::reset << std::flush;
+      std::cout << termcolor::red << termcolor::bold << expected << termcolor::reset << std::flush;
       total_num_mistakes += 1;
       error_indices[n].insert(i - 1);
     }
